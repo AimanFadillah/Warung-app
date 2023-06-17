@@ -50,7 +50,6 @@
   <div class="modal-dialog modal-dialog-centered"  >
     <div class="modal-content" style="border-radius: 0px;border:none">
       <div class="modal-body" id="bodyModal" >
-        
       </div>
       <button type="button" class="btn btn-secondary d-none" data-bs-dismiss="modal" id="tutupModal" >Close</button>
     </div>

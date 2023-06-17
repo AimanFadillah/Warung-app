@@ -14,19 +14,22 @@ document.addEventListener("click",async (e) => {
 
   if (e.target.classList.contains("product")) {
     const id = e.target.getAttribute("data-id");
-    showProduct(id);
+    const productId = e.target.getAttribute("data-product");
+    showProduct(id,productId);
   }
 
   if (e.target.id === "editButton") {
     const id = e.target.getAttribute("data-id")
-    EditProduct(id);
+    const productId = e.target.getAttribute("data-product");
+    EditProduct(id,productId);
   }
 
   if (e.target.id === "deleteButton") {
     const konfirmasi = confirm("Yakin untuk menghapus barang ini?")
     if (konfirmasi) {
       const id = e.target.getAttribute("data-id")
-      MenghapusProduct(id);
+      const productId = e.target.getAttribute("data-product");
+      MenghapusProduct(id,productId);
     }
   }
 
@@ -74,18 +77,29 @@ document.addEventListener("submit",async (e) => {
     e.preventDefault();
     const product = await SubmitFormCreate(e.target);
     if(product){
-      console.log(product);
-      tambahProduct(product);
+      tambahProduct(product,true);
     }
   }
 
   if (e.target.id === "formCreate" && e.target.getAttribute("data-type") === "update") {
-    console.log("Update");
     e.preventDefault();
-    SubmitFormCreate(e.target)
+    const product = await SubmitFormCreate(e.target)
+    const productId = e.target.getAttribute("data-product");
+    if(product){
+      MerubahProduct(productId,product)
+    }
   }
 
 })
+
+function MerubahProduct (productId,product) {
+  const productItem = document.querySelector(`.productke${productId}`)
+  const SideAtas = productItem.querySelectorAll("div h4")
+  const harga = Number(product.harga)
+  SideAtas[0].innerHTML = product.name;
+  SideAtas[1].innerHTML = harga.toLocaleString("id-ID",{style:"currency",currency:"IDR"});
+  productItem.querySelector("p").innerHTML = product.kategori.name;
+}
 
 async function MenghapusVariantDatabase (target) {
   const id = target.getAttribute("data-update");
@@ -119,7 +133,7 @@ async function AksiButtonCreateVariant (target) {
   }
 }
 
-async function showProduct(id) {
+async function showProduct(id,productId) {
   buttonModal.click()
   ModalLoad()
   const product = await ApiData(`/api/product?find=${id}`)
@@ -127,8 +141,8 @@ async function showProduct(id) {
         <div class="d-flex justify-content-between">
           <h4 style="color: #090580"  >${product.name}</h4>
           <div class="d-flex ">
-          <button style="border:none;background:none;color: #090580"  ><i  id="editButton"  data-id="${product.id}" class="bi bi-pencil-square"></i></button>
-          <button style="border:none;background:none;color: #090580"  ><i id="deleteButton" data-id="${product.id}" class="bi bi-trash3"></i></button>
+          <button style="border:none;background:none;color: #090580"  ><i  id="editButton"  data-id="${product.id}" data-product="${productId}" class="bi bi-pencil-square"></i></button>
+          <button style="border:none;background:none;color: #090580"  ><i id="deleteButton" data-id="${product.id}" data-product="${productId}" class="bi bi-trash3"></i></button>
           </div>
         </div>
         <div id="containerTable">
@@ -147,15 +161,15 @@ async function showProduct(id) {
   }
 }
 
-async function EditProduct(id) {
+async function EditProduct(id,productId) {
   ModalLoad()
   const product = await ApiData(`/api/product?find=${id}`)
   bodyModal.innerHTML = `
-        <form method="post" action="/home/${id}/" id="formCreate" data-type="update" >
+        <form method="post" action="/home/${id}/" id="formCreate" data-type="update" data-product="${productId}" >
           <input type="hidden" name="_token" value="${token}" >
           <input type="hidden" name="_method" value="PUT" >
           <div class="d-flex justify-content-between align-items-center mb-2" >
-            <h4 style="color:#090580">Create Product</h4>
+            <h4 style="color:#090580">Edit Product</h4>
             <button id="submitButton" style="border:none;background:none" class="p-0"><h6 class="p-2" style="color:white;background:#090580;"  >Save</h6></button>
           </div>
           <div id="containerTable">
@@ -313,12 +327,18 @@ async function SubmitFormCreate(target) {
   return data.msg
 }
 
-function MenghapusProduct(id) {
+function MenghapusProduct(id,productId) {
   const headers = {
     "X-CSRF-TOKEN": token,
     "X-HTTP-Method-Override": "DELETE",
   }
   ApiData(`/home/${id}`, "POST", headers);
+  const product = containerProduct.querySelector(`.productke${productId}`)
+  containerProduct.removeChild(product)
+  if(product.getAttribute("id")){
+    const productItem = containerProduct.querySelector(".product-item");
+    productItem ? productItem.setAttribute("id","productPertama") : ""; 
+  }
   ofModal();
 }
 
@@ -337,17 +357,31 @@ async function isiProduct() {
   }
 }
 
-function tambahProduct (product) {
+function tambahProduct (product,palingAtas = false) {
   const harga = Number(product.harga)
-  containerProduct.innerHTML += `
-  <div class="product-item">
+  const productItem = containerProduct.querySelectorAll(".product-item");
+  const div = document.createElement("div");
+  const productPertama = document.querySelector("#productPertama");
+  div.setAttribute("class",`product-item productke${id}`)
+  if(palingAtas){
+    div.setAttribute("id","productPertama")
+  }else if (productItem.length === 0){
+    div.setAttribute("id","productPertama")
+  }
+  div.innerHTML = `
   <div class="d-flex justify-content-between">
-  <h4 class="product" data-id="${product.id}" >${product.name}</h4>
+  <h4 class="product" data-id="${product.id}" data-product="${id}" >${product.name}</h4>
   <h4>${harga.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })}</h4>
   </div>
   <p>${product.kategori.name}</p>
-  </div>
   `
+  if(palingAtas){
+    containerProduct.insertBefore(div,productPertama);
+    productPertama ? productPertama.removeAttribute("id") : "";
+  }else{
+    containerProduct.appendChild(div);
+  }
+  id++
 }
 
 async function ReadyPage() {

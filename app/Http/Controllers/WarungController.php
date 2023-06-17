@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Kategori;
 use App\Models\Product;
 use App\Models\Variant;
 use Illuminate\Http\Request;
@@ -81,7 +82,17 @@ class WarungController extends Controller
             ]);
         }
 
-        return response()->json($this->pesanSuccess());
+        $kategori = Kategori::find($validatedData["kategori_id"][0]);
+
+        $data = [
+            "name" => $validatedData["name"][0],
+            "harga" => $validatedData["harga"][0],
+            "kategori" => [
+                "name" => $kategori->name,
+            ]
+        ];
+
+        return response()->json($this->pesanSuccess($data));
     }
 
     public function destroy (Product $Product) {
